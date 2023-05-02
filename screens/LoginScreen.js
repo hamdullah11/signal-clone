@@ -3,16 +3,25 @@ import { StatusBar } from "expo-status-bar";
 
 import React, { useEffect, useState } from "react";
 import { Button, Image, Input } from "react-native-elements";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const signIn = () => {};
+  const signIn = () => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        navigation.navigate("home");
+      })
+      .catch((err) => {
+        alert(err.message);
+      });
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      console.log(authUser);
       if (authUser) {
         navigation.replace("home");
       }
@@ -37,6 +46,7 @@ const LoginScreen = ({ navigation }) => {
         <Input
           placeholder="Email"
           autoFocus
+          keyboardType="email-address"
           onChangeText={(text) => setEmail(text)}
           value={email}
         />

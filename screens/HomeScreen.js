@@ -1,60 +1,111 @@
-import { KeyboardAvoidingView, StyleSheet, Text, View } from "react-native";
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { StatusBar } from "expo-status-bar";
 
-import React, { useEffect, useState } from "react";
-import { Button, Image, Input } from "react-native-elements";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase";
+import React, { useLayoutEffect, useState, useEffect } from "react";
+import { Avatar, Button, Image, Input } from "react-native-elements";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, db } from "../firebase";
+import CustomListItem from "../components/CustomListItem";
+import AntDesign from "react-native-vector-icons/AntDesign";
+import SimpleLineIcons from "react-native-vector-icons/SimpleLineIcons";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
 
 const HomeScreen = ({ navigation }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const signIn = () => {};
+  const [chats, setChats] = useState([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      if (authUser) {
-        navigation.replace("home");
-      }
+    const unsubscribe = onSnapshot(collection(db, "chats"), (snapshot) => {
+      setChats(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
+      );
     });
-
     return unsubscribe;
   }, []);
+
+  const signOutUser = () => {
+    signOut(auth).then(() => navigation.replace("Login"));
+  };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: "Signal",
+      headerTitleAlign: "center",
+      headerStyle: {
+        backgroundColor: "white",
+      },
+      headerTitleStyle: {
+        color: "black",
+      },
+      headerTintColor: "black",
+      headerLeft: () => (
+        <View
+          style={{
+            marginLeft: 5,
+          }}
+        >
+          <TouchableOpacity onPress={signOutUser}>
+            <Avatar
+              source={{
+                uri: auth?.currentUser?.photoURL,
+              }}
+            />
+          </TouchableOpacity>
+        </View>
+      ),
+      headerRight: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            width: 60,
+            alignItems: "center",
+            marginRight: 10,
+          }}
+        >
+          <TouchableOpacity activeOpacity={0.5}>
+            <AntDesign name="camera" size={22} color="black" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.5}
+            onPress={() => navigation.navigate("AddChat")}
+          >
+            <SimpleLineIcons name="pencil" size={20} color="black" />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, []);
+
+  const enterChat = (id, chatName) => {
+    navigation.navigate("Chat", {
+      id,
+      chatName,
+    });
+  };
+
   return (
-    <KeyboardAvoidingView style={styles.container}>
+    <SafeAreaView>
       <StatusBar style="light" />
-      <Image
-        source={{
-          uri: "https://seeklogo.com/images/S/signal-logo-20A1616F60-seeklogo.com.png",
-        }}
-        style={{
-          width: 150,
-          height: 150,
-          marginBottom: 20,
-        }}
-      />
-      <View style={styles.inputContainer}>
-        <Input
-          placeholder="Email"
-          autoFocus
-          onChangeText={(text) => setEmail(text)}
-          value={email}
-        />
-        <Input
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={(pass) => setPassword(pass)}
-        />
-      </View>
-      <Button title={"Login"} containerStyle={styles.button} onPress={signIn} />
-      <Button
-        title={"Register"}
-        containerStyle={styles.button}
-        type="outline"
-        onPress={() => navigation.navigate("Register")}
-      />
-    </KeyboardAvoidingView>
+      <ScrollView>
+        {chats.map(({ id, data: { chatName } }) => (
+          <CustomListItem
+            id={id}
+            chatName={chatName}
+            key={id}
+            enterChat={enterChat}
+          />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

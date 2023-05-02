@@ -53,7 +53,7 @@ const RegisterScreen = ({ navigation }) => {
         <Input
           placeholder="Full Name"
           autoFocus
-          onChangeText={(name) => setName(text)}
+          onChangeText={(name) => setName(name)}
           value={name}
         />
 
